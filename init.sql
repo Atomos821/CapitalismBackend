@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS banking_products (
     allowed_entity_types JSONB NOT NULL DEFAULT '[]',
     can_receive_external_transfers BOOLEAN NOT NULL DEFAULT TRUE,
     can_pay_merchants BOOLEAN NOT NULL DEFAULT TRUE,
+    merchant_fee_percent NUMERIC(5,2) NOT NULL DEFAULT 1.00,
     can_withdraw_cash BOOLEAN NOT NULL DEFAULT TRUE,
     minimum_balance BIGINT NOT NULL DEFAULT 0
 );
@@ -266,7 +267,9 @@ CREATE TABLE IF NOT EXISTS transaction_queue (
     session_id VARCHAR(255),
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING', -- 'PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'
     error_message TEXT,
+    retry_count INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     scheduled_at TIMESTAMPTZ,
+    processing_started_at TIMESTAMPTZ,
     processed_at TIMESTAMPTZ
 );
