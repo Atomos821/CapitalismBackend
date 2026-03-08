@@ -1,0 +1,19 @@
+# Database data
+postgres_data/
+
+# Environment variables
+.env
+!.env.example
+
+# Docker Compose overrides
+docker-compose.override.yml
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.bak
