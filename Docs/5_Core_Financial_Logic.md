@@ -1,72 +1,72 @@
-# 5. Logique Financière du Système
+# 5. Capitalism Reforged Business Logic
 ---
 
-## 🏦 Écosystème Multi-Banques
-Le système gère plusieurs marques bancaires indépendantes, chacune avec sa propre spécialisation et monnaie de compte.
+## 🏦 Multi-Bank Ecosystem
+The system manages several independent banking brands, each with its own specialization and account currency.
 
 ### 1. Union Bank (ID: `UB`)
-- **Cible** : Civil et petites entreprises.
-- **Monnaie de compte** : **EUR**.
-- **Produits** :
-    - `UB_CHECKING` : Compte courant standard (Frais: 1.00%).
-    - `UB_SAVINGS` : Livret d'épargne (Intérêts: 3.00%, Pas de retraits cash).
+- **Target**: Civilians and small businesses.
+- **Account Currency**: **EUR**.
+- **Products**:
+    - `UB_CHECKING`: Standard checking account (Fee: 1.00%).
+    - `UB_SAVINGS`: Savings book (Interest: 3.00%, No cash withdrawals).
 
 ### 2. Talos Financial (ID: `TF`)
-- **Cible** : Secteur défense, mercenaires et opérations tactiques.
-- **Monnaie de compte** : **RUB**.
-- **Produits** :
-    - `TF_OPERATIVE` : Compte opérationnel haute liquidité (Frais: 0.20%, Solde min: 500k).
-    - `TF_WAR_CHEST` : Coffre de défense (Intérêts: 1.50%, Pas de paiement marchand).
+- **Target**: Defense sector, mercenaries, and tactical operations.
+- **Account Currency**: **RUB**.
+- **Products**:
+    - `TF_OPERATIVE`: High-liquidity operational account (Fee: 0.20%, Min balance: 500k).
+    - `TF_WAR_CHEST`: Defense vault (Interest: 1.50%, No merchant payments).
 
 ### 3. Vanguard Trade & Trust (ID: `VTT`)
-- **Cible** : International, gouvernements et gros capitaux.
-- **Monnaie de compte** : **USD**.
-- **Produits** :
-    - `VTT_BUSINESS` : Business Pro Plus (Multi-devises, Frais virements réduits).
+- **Target**: International, governments, and large capitals.
+- **Account Currency**: **USD**.
+- **Products**:
+    - `VTT_BUSINESS`: Business Pro Plus (Multi-currency, Reduced transfer fees).
 
-## 💰 Types de Prêts (Loans)
-Le middleware supporte plusieurs types de crédits gérés via `LoanService` :
-- **Prêt Personnel** : Taux fixe, remboursement hebdomadaire automatique.
-- **Crédit de Guerre (Talos)** : Destiné à l'achat d'équipement, taux préférentiel.
-- **Bail Commercial** : Pour les entreprises, plafonds élevés.
+## 💰 Loan Types
+The middleware supports several types of credits managed via `LoanService`:
+- **Personal Loan**: Fixed rate, automatic weekly repayment.
+- **War Credit (Talos)**: Intended for equipment purchase, preferential rate.
+- **Commercial Lease**: For businesses, high ceilings.
 
-## 💸 Logique des Frais (Taxation)
-Les frais sont calculés de manière "On-Top" (au-dessus du montant demandé).
+## 💸 Fee Logic (Taxation)
+Fees are calculated "On-Top" (above the requested amount).
 
-### Pour les Virements (Transfers) :
-Si un joueur A envoie **1 000 CRD** à un joueur B avec des frais de 1% :
-1.  **Montant débité** du compte A : **1 010 CRD** (1 000 + 10 de taxe).
-2.  **Montant crédité** au compte B : **1 000 CRD**.
+### For Transfers:
+If player A sends **1,000 CRD** to player B with a 1% fee:
+1.  **Amount debited** from account A: **1,010 CRD** (1,000 + 10 tax).
+2.  **Amount credited** to account B: **1,000 CRD**.
 
-### Pour les Retraits (Withdrawals) :
-Si un joueur retire **500 CRD** avec des frais de 0.5% :
-1.  **Montant débité** du compte : **502.5 CRD** (500 + 2.5 de taxe).
-2.  **Cash reçu** par le joueur : **500 CRD**.
+### For Withdrawals:
+If a player withdraws **500 CRD** with a 0.5% fee:
+1.  **Amount debited** from the account: **502.5 CRD** (500 + 2.5 tax).
+2.  **Cash received** by the player: **500 CRD**.
 
-## 💱 Conversion Forex (Modèle Pivot)
-Le système utilise une monnaie de référence fictive appelée **CRD** (Crédits) comme pivot central. Cela permet de convertir n'importe quelle paire de devises sans avoir à définir chaque combinaison manuellement.
+## 💱 Forex Conversion (Pivot Model)
+The system uses a fictional reference currency called **CRD** (Credits) as a central pivot. This allows converting any pair of currencies without having to define every combination manually.
 
-### Fonctionnement du Pivot :
-Lorsqu'un virement a lieu entre un compte **RUB** et un compte **EUR** :
-1.  Le système cherche un taux direct `RUB -> EUR`.
-2.  S'il n'existe pas, il calcule le taux via le pivot : `(RUB -> CRD) * (CRD -> EUR)`.
-3.  **Avantage** : Pour ajouter une nouvelle devise (ex: GBP), il suffit de définir son taux par rapport au CRD.
+### Pivot Operation:
+When a transfer takes place between a **RUB** account and an **EUR** account:
+1.  The system looks for a direct `RUB -> EUR` rate.
+2.  If it doesn't exist, it calculates the rate via the pivot: `(RUB -> CRD) * (CRD -> EUR)`.
+3.  **Advantage**: To add a new currency (e.g., GBP), it is enough to define its rate relative to the CRD.
 
-### Précision et Sécurité :
-- **Abstraction** : Le CRD est une unité de compte technique invisible. Les banques affichent les montants dans leur monnaie locale (EUR, USD, RUB).
-- **Taxation** : La taxe est calculée sur le montant source *avant* la conversion pivot.
-- **Types SQL** : Les taux utilisent `NUMERIC(18,8)` pour garantir 8 décimales de précision sans perte.
+### Precision and Security:
+- **Abstraction**: The CRD is an invisible technical account unit. Banks display amounts in their local currency (EUR, USD, RUB).
+- **Taxation**: The tax is calculated on the source amount *before* the pivot conversion.
+- **SQL Types**: Rates use `NUMERIC(18,8)` to ensure 8 decimal places of precision without loss.
 
-## 👷 Workers d'Arrière-plan
-Le système s'auto-régule via plusieurs services de fond :
-1. **TransactionOutboxWorker** : Traite la file d'attente asynchrone des transactions.
-2. **InterestCapitalizationWorker** : Calcule et crédite les intérêts quotidiennement.
-3. **SubscriptionWorker** : Gère les paiements périodiques (loyers, factures).
-4. **LoanRepaymentWorker** : Collecte automatisée des dettes.
+## 👷 Background Workers
+The system self-regulates via several background services:
+1. **TransactionOutboxWorker**: Processes the asynchronous transaction queue.
+2. **InterestCapitalizationWorker**: Calculates and credits interest daily.
+3. **SubscriptionWorker**: Manages periodic payments (rents, bills).
+4. **LoanRepaymentWorker**: Automated debt collection.
 
-## 🔐 Sécurité & Précision
-1.  **Tout en Entiers (`long`)** : L'argent est stocké en **cents**. Aucun type `float` n'est utilisé.
-2.  **Procurations** : Les mandataires (`Proxies`) ont des droits granulaires et des plafonds de dépense suivis par `initiator_entity_id`.
+## 🔐 Security & Precision
+1.  **All in Integers (`long`)**: Money is stored in **cents**. No `float` type is used.
+2.  **Proxies**: Mandataries (`Proxies`) have granular rights and spending ceilings tracked by `initiator_entity_id`.
 
 ---
-*Prochaine étape : [Guide de Déploiement](6_Project_Deployment.md)*
+*Next step: [Deployment Guide](6_Project_Deployment.md)*

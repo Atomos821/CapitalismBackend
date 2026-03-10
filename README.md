@@ -1,48 +1,53 @@
-# 🏦 Capitalism - Data Core
+# 🏦 Capitalism - DB
 
-**Capitalism - Data Core** est un moteur de persistance financier robuste et agnostique, conçu pour gérer des économies complexes et persistantes. Bien qu'initialement développé pour des simulations de jeux, sa structure est strictement conforme aux principes de la comptabilité en partie double et peut être utilisée par n'importe quelle application nécessitant un registre bancaire fiable.
+**Capitalism - DB** is the central data foundation for the **Capitalism Reforged** project.
 
-Il constitue le **cœur de données** (Source of Truth) et la couche de persistance de l'écosystème Capitalism. Il assure le stockage immuable, la définition du schéma relationnel et le paramétrage initial des produits financiers.
+It is a robust database designed to reliably store all financial and economic information of the system. Although initially created for the game, it uses real accounting principles to ensure that every cent is tracked.
 
-## 🎯 Vision et Objectifs
-Le Data Core n'est pas qu'une simple base de données ; c'est un coffre-fort numérique conçu pour :
-*   **L'Agnosticisme applicatif** : Interfaçable avec n'importe quel middleware (C#, Python, Node.js) ou simulateur.
-*   **L'Infaillibilité financière** : Utilisation massive de contraintes SQL pour empêcher techniquement le double-débit ou les soldes incohérents.
-*   **La Haute Disponibilité** : Prêt pour la production via Docker, avec indexation et partitionnement pour des millions de transactions.
+It serves as the **source of truth** for the ecosystem. This is where storage rules, account structures, and bank parameters are defined.
 
-## ✨ Fonctionnalités Clés
-*   **Registre Multi-Devises** : Support natif du Change (Forex) et de la taxation automatique.
-*   **Structure d'Entités Abstraite** : Gestion unifiée des Individus, Entreprises, Factions et États.
-*   **Monétique Complète** : Gestion de cartes bancaires (PIN, plafonds, cycles de vie).
-*   **Système de Prêts & Intérêts** : Moteur de calcul et de suivi des dettes et rendements.
-*   **Délégations & Procurations** : Contrôles granulaires pour les accès partagés (comptes de faction/entreprise).
+## 🎯 Vision and Objectives
+The data layer was designed as a digital vault:
+*   **Openness**: Can be used with any program (C#, Python, Node.js) or game.
+*   **Financial Security**: Uses strict mathematical rules within the database to prevent calculation errors or impossible negative balances.
+*   **Performance**: Production-ready, capable of handling millions of transactions without slowdowns.
 
-## 📂 Structure du Projet
-- `init.sql` : Définition du schéma technique (Tables, Index, Triggers).
-- `seeds.sql` : Configuration métier par défaut (Banques, Offres, Taux).
-- `docker-compose.yml` : Orchestration prête à l'emploi (PostgreSQL 15 + pgAdmin).
-- `Docs/` : Documentation approfondie.
-  - [1. Introduction au Data Core](Docs/1_Introduction.md)
-  - [2. Capacités Fonctionnelles](Docs/2_Functional_Capabilities.md)
-  - [3. Architecture & Modèle de Données](Docs/3_Data_Model_Architecture.md)
-  - [4. Spécifications Techniques](Docs/4_Technical_Specifications.md)
-  - [5. Logique Financière du Système](Docs/5_Core_Financial_Logic.md)
-  - [6. Guide de Déploiement](Docs/6_Project_Deployment.md)
-  - [7. Aperçu de l'API Middleware](Docs/7_Middleware_API_Preview.md)
+## ✨ Key Features
+*   **Multi-Currency Ledger**: Native support for Foreign Exchange (Forex) and automatic taxation.
+*   **Abstract Entity Structure**: Unified management of Individuals, Businesses, Factions, and States.
+*   **Complete Electronic Money**: Management of bank cards (PIN, limits, lifecycles).
+*   **Loan & Interest System**: Engine for calculating and tracking debts and returns.
+*   **Delegations & Proxies**: Granular controls for shared access (faction/business accounts).
 
-## 🚀 Démarrage Rapide
+## 📂 Project Structure
+- `init.sql`: Technical schema definition (Tables, Indexes, Triggers).
+- `seeds.sql`: Default business configuration (Banks, Offers, Rates).
+- `docker-compose.yml`: Ready-to-use orchestration (PostgreSQL 17 + pgAdmin).
+- `docs/`: In-depth documentation.
+  - [1. Introduction](docs/1_Introduction.md)
+  - [2. Functional Capabilities](docs/2_Functional_Capabilities.md)
+  - [3. Data Model & Architecture](docs/3_Data_Model_Architecture.md)
+  - [4. Technical Specifications](docs/4_Technical_Specifications.md)
+  - [5. Core Financial Logic](docs/5_Core_Financial_Logic.md)
+  - [6. Deployment Guide](docs/6_Project_Deployment.md)
 
-### 1. Prérequis
+## 🚀 Quick Start
+
+### 1. Prerequisites
 *   Docker & Docker Compose.
-*   Copiez `.env.example` vers `.env` et configurez vos secrets.
+*   Copy `.env.example` to `.env` and configure your secrets.
 
-### 2. Lancement
+### 2. Launch
 ```bash
 docker-compose up -d
 ```
-Cela démarrera :
-*   **PostgreSQL** sur le port `5432` (par défaut).
-*   **pgAdmin** sur le port `5050` (par défaut).
+This will start:
+*   **PostgreSQL** on port `5432` (default).
+*   **pgAdmin** on port `5050` (default).
 
-## 🛡️ Licence
-Ce projet est sous licence **Propriétaire (Tous droits réservés)**. Voir le fichier [LICENSE](LICENSE) pour plus de détails. Toute modification ou redistribution est interdite sans autorisation.
+## 🛡️ License
+This project is under a **Proprietary License (All rights reserved)**.
+
+See the [LICENSE](LICENSE) file for more details.
+
+Any modification or redistribution is prohibited without authorization.

@@ -1,224 +1,214 @@
-# 3. Architecture & Modèle de Données
+# 3. Architecture & Data Model
 
-Ce document décrit l'architecture technique retenue pour le système économique ainsi que le modèle de données relationnel, conçu pour agir comme un véritable Système d'Information (SI) bancaire miniature.
-
-## 1. Architecture Globale (Micro-Services)
-Pour garantir la fiabilité, la sécurité et l'évolutivité du système, l'architecture est divisée en trois parties distinctes :
-
-### 1.1. Frontend / Module Jeu (Arma Reforger Mod)
-- **Emplacement :** `[Addon Directory]/addons/Capitalism`
-- **Rôle :** Interface utilisateur (UI), objets physiques (ATM, liasses de billets dans l'inventaire), actions contextuelles du jeu (braquages, achats en boutique, salaires versés en jeu).
-- **Fonctionnement :** Envoie des requêtes HTTP (REST) vers le Middleware pour effectuer les transactions. Le serveur Arma ne stocke **aucune** donnée bancaire persistante.
-
-### 1.2. Middleware (API Gateway & Logique de Transition)
-- **Emplacement :** `[Middleware Repository]`
-- **Rôle :** Passerelle de sécurité entre le jeu et la base de données.
-- **Fonctionnement :** 
-  - Reçoit les requêtes du serveur Arma Reforger (ex: "Transférer 500$ de A vers B").
-  - Gère les files d'attente (queues) pour éviter de surcharger le backend lors de transactions simultanées.
-  - Valide les droits et l'intégrité de la requête (Anti-triche).
-  - Gère les déconnexions : si le joueur se déconnecte pendant une requête, le middleware s'assure que la transaction aboutit ou est annulée proprement (Transaction ACID).
-- **Déploiement :** Conteneurisé via Docker pour une isolation stricte et une portabilité maximale.
-
-### 1.3. Backend (Core Banking System & BDD)
-- **Emplacement :** `[Backend Repository]`
-- **Rôle :** Le cœur du système bancaire. Héberge la base de données relationnelle (PostgreSQL) et la logique métier critique (calcul des soldes, génération des IBANs).
-- **Fonctionnement :** Système fermé, accessible uniquement via le Middleware. Conçu pour être **scalable** : peut tourner de manière autonome sur un nœud unique (pour les petits serveurs) ou en cluster avec réplication/failover (pour les grosses communautés exigeant une Haute Disponibilité).
-- **Déploiement :** Conteneurisé via Docker (Image officielle PostgreSQL). Réside dans un réseau virtuel isolé que seul le Middleware peut interroger.
+This document describes how the **Capitalism Reforged** data structure is technically organized to function as a true miniature bank.
 
 ---
 
-## 2. Modèle de Données (Vrai SI Bancaire)
+## 1. Data Model (True Banking IS)
 
-Pour éviter les failles (duplications, pertes) et assurer une parfaite traçabilité, le modèle doit être rigoureux et séparer les **Entités** (qui possède) des **Comptes** (où est l'argent).
+To avoid vulnerabilities (duplications, losses) and ensure perfect traceability, the model must be rigorous and separate **Entities** (who owns) from **Accounts** (where the money is).
 
-### 2.1. Les Entités (entities)
-Une entité est une personne capable de posséder un compte bancaire. *Note : Il existera une entité Système inaltérable appelée "World Cash" pour comptabiliser l'argent liquide physique circulant sur le serveur Arma et équilibrer la masse monétaire.*
-- `id` : `UUID` (PRIMARY KEY)
-- `type` : `VARCHAR(50)` NOT NULL (Ex: 'PHYSICAL_PERSON', 'MORAL_PERSON', 'SYSTEM')
-- `name` : `VARCHAR(255)` NOT NULL (Nom RP du joueur ou nom de l'entreprise)
-- `external_id` : `VARCHAR(255)` UNIQUE NULL (SteamID, UID Reforger, ou identifiant externe métier)
-- `metadata` : `JSONB` DEFAULT '{}' (Champ fourre-tout ultra performant pour stocker des données libres sans modifier le schéma SQL limit: vip_level, last_login)
-- `created_at` : `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
-- `updated_at` : `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
-- `deleted_at` : `TIMESTAMPTZ` NULL (Soft Delete : Les données financières ne sont jamais détruites, elles sont juste marquées supprimées)
+### 2.1. Entities (entities)
+An entity is a person or organization capable of owning a bank account. *Note: A non-alterable System entity called "World Cash" will exist to track physical cash circulating on the Arma server and balance the money supply.*
+- `id`: `UUID` (PRIMARY KEY)
+- `type`: `VARCHAR(50)` NOT NULL (e.g., 'PHYSICAL_PERSON', 'MORAL_PERSON', 'SYSTEM')
+- `name`: `VARCHAR(255)` NOT NULL (RP name of the player or business name)
+- `external_id`: `VARCHAR(255)` UNIQUE NULL (SteamID, Reforger UID, or external business identifier)
+- `metadata`: `JSONB` DEFAULT '{}' (High-performance catch-all field for storing free data without modifying the SQL schema: vip_level, last_login)
+- `created_at`: `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
+- `updated_at`: `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
+- `deleted_at`: `TIMESTAMPTZ` NULL (Soft Delete: Financial data is never destroyed, only marked as deleted)
 
-### 2.2. Les Produits Bancaires (banking_products)
-Définit les règles ("Contrats") des différents types de comptes (Ex: Compte Courant, Livret A, PEL).
-- `id` : `VARCHAR(50)` PRIMARY KEY (Ex: 'CHECKING', 'SAVINGS_LIVRET_A')
-- `name` : `VARCHAR(255)` NOT NULL (Nom lisible, ex: "Livret A")
-- `interest_rate_percent` : `NUMERIC(5,2)` NOT NULL DEFAULT 0.00 (Taux de rémunération, ex: 3.00)
-- `max_deposit_limit` : `BIGINT` NULL (Plafond de versement en centimes. Le code backend refusera les dépôts au-delà, mais laissera passer la capitalisation des intérêts)
-- `withdrawal_fee_percent` : `NUMERIC(5,2)` NOT NULL DEFAULT 0.00 (Frais éventuels sur les retraits anticipés)
-- `max_accounts_per_entity` : `INTEGER` NULL (Nombre maximum autorisé par joueur)
-- `allowed_entity_types` : `JSONB` NOT NULL DEFAULT '[]' (Qui a le droit d'ouvrir ce compte? Ex: '["PHYSICAL_PERSON"]')
-- `can_receive_external_transfers` : `BOOLEAN` NOT NULL DEFAULT TRUE (Autorise les virements provenant d'une autre entité)
-- `can_pay_merchants` : `BOOLEAN` NOT NULL DEFAULT TRUE (Peut-on payer en boutique directement avec ce compte)
-- `minimum_balance` : `BIGINT` NOT NULL DEFAULT 0 (Montant minimum pour garder le compte ouvert/l'ouvrir)
+### 2.2. Banking Products (banking_products)
+Defines the rules ("Contracts") for different types of accounts (e.g., Checking Account, Savings Account).
+- `id`: `VARCHAR(50)` PRIMARY KEY
+- `bank_id`: `VARCHAR(50)` NOT NULL REFERENCES banks(id)
+- `name`: `VARCHAR(255)` NOT NULL
+- `interest_rate_percent`: `NUMERIC(5,2)` NOT NULL DEFAULT 0.00
+- `max_deposit_limit`: `BIGINT` NULL
+- `withdrawal_fee_percent`: `NUMERIC(5,2)` NOT NULL DEFAULT 0.00
+- `transfer_fee_percent`: `NUMERIC(5,2)` NOT NULL DEFAULT 0.00
+- `merchant_fee_percent`: `NUMERIC(5,2)` NOT NULL DEFAULT 1.00
+- `max_accounts_per_entity`: `INTEGER` NULL
+- `allowed_entity_types`: `JSONB` NOT NULL DEFAULT '[]'
+- `can_receive_external_transfers`: `BOOLEAN` NOT NULL DEFAULT TRUE
+- `can_pay_merchants`: `BOOLEAN` NOT NULL DEFAULT TRUE
+- `can_withdraw_cash`: `BOOLEAN` NOT NULL DEFAULT TRUE
+- `minimum_balance`: `BIGINT` NOT NULL DEFAULT 0
+- `created_at`: `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
+- `updated_at`: `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
 
-### 2.3. Les Comptes Bancaires (accounts)
-Un compte est toujours rattaché à une Entité. *Un compte Système sera dédié au World Cash.*
-- `id` : `UUID` PRIMARY KEY
-- `iban` : `VARCHAR(34)` UNIQUE NOT NULL (Ex: "FR12345678A" ou "XX00000000A" pour le World Cash)
-- `entity_id` : `UUID` NOT NULL REFERENCES entities(id)
-- `product_type_id` : `VARCHAR(50)` NOT NULL REFERENCES banking_products(id)
-- `balance` : `BIGINT` NOT NULL DEFAULT 0 CHECK (balance >= overdraft_limit) (Toujours en nombre entier de centimes)
-- `currency` : `VARCHAR(3)` NOT NULL DEFAULT 'CAP'
-- `status` : `VARCHAR(20)` NOT NULL DEFAULT 'ACTIVE' (ACTIVE, CLOSED)
-- `can_withdraw` : `BOOLEAN` NOT NULL DEFAULT TRUE (Droit de virement sortant ou paiement, pouvant être révoqué par la Justice)
-- `can_deposit` : `BOOLEAN` NOT NULL DEFAULT TRUE (Droit de dépôt entrant)
-- `overdraft_limit` : `BIGINT` NOT NULL DEFAULT 0 (Plafond de découvert autorisé en négatif)
-- `metadata` : `JSONB` DEFAULT '{}' (Spécificités au compte à la volée, ex: daily_withdrawal_limit)
-- `created_at` : `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
-- `updated_at` : `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
-- `deleted_at` : `TIMESTAMPTZ` NULL
+### 2.3. Bank Accounts (accounts)
+An account is always linked to an Entity. *A System account will be dedicated to World Cash.*
+- `id`: `UUID` PRIMARY KEY
+- `iban`: `VARCHAR(34)` UNIQUE NOT NULL (e.g., "FR12345678A" or "XX00000000A" for World Cash)
+- `entity_id`: `UUID` NOT NULL REFERENCES entities(id)
+- `product_type_id`: `VARCHAR(50)` NOT NULL REFERENCES banking_products(id)
+- `balance`: `BIGINT` NOT NULL DEFAULT 0 CHECK (balance >= overdraft_limit) (Always in whole cents)
+- `currency`: `VARCHAR(3)` NOT NULL DEFAULT 'CAP'
+- `status`: `VARCHAR(20)` NOT NULL DEFAULT 'ACTIVE' (ACTIVE, CLOSED)
+- `can_withdraw`: `BOOLEAN` NOT NULL DEFAULT TRUE (Right for outgoing transfer or payment, can be revoked by Justice)
+- `can_deposit`: `BOOLEAN` NOT NULL DEFAULT TRUE (Right for incoming deposit)
+- `overdraft_limit`: `BIGINT` NOT NULL DEFAULT 0 (Negative overdraft limit allowed)
+- `metadata`: `JSONB` DEFAULT '{}' (On-the-fly account specifics, e.g., daily_withdrawal_limit)
+- `created_at`: `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
+- `updated_at`: `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
+- `deleted_at`: `TIMESTAMPTZ` NULL
 
-### 2.4. Les Transactions (transactions)
-Pour une sécurité maximale (comme dans une vraie banque), le solde d'un compte devrait théoriquement être la somme de toutes ses transactions.
-- `id` : `UUID` PRIMARY KEY
-- `idempotency_key` : `UUID` NULL (Généré par le client/jeu, empêche les doubles transactions. Réutilisable si la transaction précédente a échoué.)
-- `initiator_entity_id` : `UUID` NULL REFERENCES entities(id) (L'entité physique ayant déclenché l'ordre, crucial pour l'audit des procurations)
-- `timestamp` : `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
-- `source_account_id` : `UUID` NULL REFERENCES accounts(id)
-- `destination_account_id` : `UUID` NULL REFERENCES accounts(id)
-- `loan_id` : `UUID` NULL REFERENCES loans(id) (Optionnel, utile pour la traçabilité des remboursements)
-- `amount` : `BIGINT` NOT NULL CHECK (amount > 0)
-- `tax_amount` : `BIGINT` NOT NULL DEFAULT 0 (Montant confisqué automatiquement au passage pour l'état)
-- `tax_destination_account_id` : `UUID` NULL REFERENCES accounts(id)
-- `category` : `VARCHAR(50)` NULL (Sous-catégorie RP: SALARY, ITEM_SALE, VEHICLE_SALE, TICKET)
-- `source_balance_after` : `BIGINT` NULL (Audit Ledger du compte source)
-- `destination_balance_after` : `BIGINT` NULL (Audit Ledger du compte destinataire)
-- `type` : `VARCHAR(50)` NOT NULL (TRANSFER, DEPOSIT, WITHDRAW, PAYCHECK, PURCHASE, FEE, INTEREST)
-- `status` : `VARCHAR(20)` NOT NULL DEFAULT 'PENDING' (PENDING, COMPLETED, FAILED)
-- `reference` : `TEXT` NULL (Motif ou note de la transaction)
-- `metadata` : `JSONB` DEFAULT '{}' (Audit: coordonnées GPS, IP, ID de l'ATM utilisé)
+### 2.4. Transactions (transactions)
+The Ledger records every cent. The table is partitioned by month for performance.
+- `id`: `UUID` NOT NULL DEFAULT gen_random_uuid()
+- `idempotency_key`: `UUID` NULL (Prevents accidental duplicate transactions)
+- `initiator_entity_id`: `UUID` NULL REFERENCES entities(id)
+- `timestamp`: `TIMESTAMPTZ` NOT NULL DEFAULT NOW() (Partitioning key)
+- `source_account_id`: `UUID` NULL REFERENCES accounts(id)
+- `destination_account_id`: `UUID` NULL REFERENCES accounts(id)
+- `loan_id`: `UUID` NULL REFERENCES loans(id)
+- `amount`: `BIGINT` NOT NULL (Amount in source currency)
+- `currency`: `VARCHAR(3)` NOT NULL DEFAULT 'CRD'
+- `destination_amount`: `BIGINT` (Amount after forex conversion)
+- `destination_currency`: `VARCHAR(3)`
+- `exchange_rate`: `NUMERIC(18,8)` NOT NULL DEFAULT 1.0 (Rate applied at time T)
+- `tax_amount`: `BIGINT` NOT NULL DEFAULT 0 (Tax amount collected)
+- `tax_destination_account_id`: `UUID` NULL REFERENCES accounts(id)
+- `category`: `VARCHAR(50)` (SALARY, ITEM_SALE, etc.)
+- `source_balance_after`: `BIGINT` (Audit trail of source balance)
+- `destination_balance_after`: `BIGINT` (Audit trail of destination balance)
+- `type`: `VARCHAR(50)` NOT NULL (TRANSFER, DEPOSIT, WITHDRAW, etc.)
+- `status`: `VARCHAR(20)` NOT NULL DEFAULT 'PENDING'
+- `reference`: `TEXT` NULL
+- `metadata`: `JSONB` DEFAULT '{}'
+- `created_at`: `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
+- `updated_at`: `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
 
-### 2.5. Les Emprunts (loans)
-Gère les crédits accordés par la banque ou entre joueurs/entreprises.
-- `id` : `UUID` PRIMARY KEY
-- `borrower_entity_id` : `UUID` NOT NULL REFERENCES entities(id)
-- `total_amount` : `BIGINT` NOT NULL CHECK (total_amount > 0)
-- `remaining_amount` : `BIGINT` NOT NULL CHECK (remaining_amount >= 0)
-- `interest_rate_percent` : `NUMERIC(5,2)` NOT NULL
-- `next_payment_date` : `TIMESTAMPTZ` NULL
-- `status` : `VARCHAR(20)` NOT NULL DEFAULT 'ACTIVE'
-- `created_at` : `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
+### 2.5. Loans (loans)
+Manages credits granted by the bank or between players/businesses.
+- `id`: `UUID` PRIMARY KEY
+- `borrower_entity_id`: `UUID` NOT NULL REFERENCES entities(id)
+- `total_amount`: `BIGINT` NOT NULL CHECK (total_amount > 0)
+- `remaining_amount`: `BIGINT` NOT NULL CHECK (remaining_amount >= 0)
+- `interest_rate_percent`: `NUMERIC(5,2)` NOT NULL
+- `next_payment_date`: `TIMESTAMPTZ` NULL
+- `status`: `VARCHAR(20)` NOT NULL DEFAULT 'ACTIVE'
+- `created_at`: `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
 
-### 2.6. Les Permis et Licences (licenses)
-Droits d'achat liés à l'économie (ex: Droit d'acheter des armes lourdes).
-- `id` : `UUID` PRIMARY KEY
-- `entity_id` : `UUID` NOT NULL REFERENCES entities(id)
-- `license_type` : `VARCHAR(100)` NOT NULL (Ex: WEAPON_LICENSE)
-- `acquired_at` : `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
-- `expires_at` : `TIMESTAMPTZ` NULL
+### 2.6. Permits and Licenses (licenses)
+Purchase rights linked to the economy (e.g., Right to buy heavy weapons).
+- `id`: `UUID` PRIMARY KEY
+- `entity_id`: `UUID` NOT NULL REFERENCES entities(id)
+- `license_type`: `VARCHAR(100)` NOT NULL (e.g., WEAPON_LICENSE)
+- `acquired_at`: `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
+- `expires_at`: `TIMESTAMPTZ` NULL
 
-### 2.7. Taux de Change (forex_rates)
-Gère un environnement multi-devises si besoin est.
-- `base_currency` : `VARCHAR(3)` NOT NULL
-- `target_currency` : `VARCHAR(3)` NOT NULL
-- `rate` : `NUMERIC(10,4)` NOT NULL CHECK (rate > 0)
-- `updated_at` : `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
-*(Note: PRIMARY KEY composite sur base_currency, target_currency)*
-*(Exemples:
-    - `forex_rates` : `base_currency`=CRD, `target_currency`=USD, rate=1.0 (Parité)
-    - `forex_rates` : `base_currency`=CRD, `target_currency`=RUB, rate=80.0 (1 CRD = 80 RUB)
-    - `forex_rates` : `base_currency`=USD, `target_currency`=CRD, rate=1.0
+### 2.7. Exchange Rates (forex_rates)
+Manages a multi-currency environment if needed.
+- `base_currency`: `VARCHAR(3)` NOT NULL
+- `target_currency`: `VARCHAR(3)` NOT NULL
+- `rate`: `NUMERIC(10,4)` NOT NULL CHECK (rate > 0)
+- `updated_at`: `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
+*(Note: Composite PRIMARY KEY on base_currency, target_currency)*
+*(Examples:
+    - `forex_rates`: `base_currency`=CRD, `target_currency`=USD, rate=1.0 (Parity)
+    - `forex_rates`: `base_currency`=CRD, `target_currency`=RUB, rate=80.0 (1 CRD = 80 RUB)
+    - `forex_rates`: `base_currency`=USD, `target_currency`=CRD, rate=1.0
 )*
 
-**Précision** : Le solde des comptes (`balance`) est un `BIGINT` représentant les **cents** (ex: 1000 = 10.00 CRD).
+**Note**: Account balances (`balance`) are `BIGINT` representing **cents** (e.g., 1000 = 10.00 CRD).
 
-### 2.8. Comptes Joints et Copropriétaires (account_owners)
-Permet à plusieurs joueurs physiques de partager la pleine propriété d'un compte.
-- `account_id` : `UUID` NOT NULL REFERENCES accounts(id)
-- `entity_id` : `UUID` NOT NULL REFERENCES entities(id)
-- `role` : `VARCHAR(50)` NOT NULL DEFAULT 'CO_OWNER'
-*(Note: PRIMARY KEY composite sur account_id, entity_id)*
+### 2.8. Joint Accounts and Co-owners (account_owners)
+Allows multiple physical players to share full ownership of an account.
+- `account_id`: `UUID` NOT NULL REFERENCES accounts(id)
+- `entity_id`: `UUID` NOT NULL REFERENCES entities(id)
+- `role`: `VARCHAR(50)` NOT NULL DEFAULT 'CO_OWNER'
+*(Note: Composite PRIMARY KEY on account_id, entity_id)*
 
-### 2.9. Procurations et Mandats (account_proxies)
-Donne le droit de dépenser l'argent d'un compte (ex: entreprise) à un autre joueur, avec des limites.
-- `id` : `UUID` PRIMARY KEY
-- `account_id` : `UUID` NOT NULL REFERENCES accounts(id)
-- `proxy_entity_id` : `UUID` NOT NULL REFERENCES entities(id)
-- `daily_spending_limit` : `BIGINT` NULL (Limite de dépenses par jour)
-- `can_transfer_money` : `BOOLEAN` NOT NULL DEFAULT FALSE (Droit de virer de l'argent du compte d'enteprise sur son propre compte, dangereux !)
-- `can_buy_from_merchants` : `BOOLEAN` NOT NULL DEFAULT TRUE (Droit d'acheter des objets pour la faction)
-- `can_withdraw_cash` : `BOOLEAN` NOT NULL DEFAULT FALSE (Droit d'aller à l'ATM retirer le cash de l'entreprise)
-- `created_at` : `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
-- `expires_at` : `TIMESTAMPTZ` NULL (Date de fin de la procuration)
+### 2.9. Proxies and Mandates (account_proxies)
+Gives the right to spend money from an account (e.g., business) to another player, with limits.
+- `id`: `UUID` PRIMARY KEY
+- `account_id`: `UUID` NOT NULL REFERENCES accounts(id)
+- `proxy_entity_id`: `UUID` NOT NULL REFERENCES entities(id)
+- `daily_spending_limit`: `BIGINT` NULL (Daily spending limit)
+- `can_transfer_money`: `BOOLEAN` NOT NULL DEFAULT FALSE (Right to transfer money from the business account to their own account, dangerous!)
+- `can_buy_from_merchants`: `BOOLEAN` NOT NULL DEFAULT TRUE (Right to buy items for the faction)
+- `can_withdraw_cash`: `BOOLEAN` NOT NULL DEFAULT FALSE (Right to go to the ATM and withdraw business cash)
+- `created_at`: `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
+- `expires_at`: `TIMESTAMPTZ` NULL (Proxy end date)
 
-### 2.10. Prélèvements Automatiques (subscriptions)
-Factures récurrentes (loyers, téléphones, impôts).
-- `id` : `UUID` PRIMARY KEY
-- `source_account_id` : `UUID` NOT NULL REFERENCES accounts(id)
-- `destination_account_id` : `UUID` NOT NULL REFERENCES accounts(id)
-- `amount` : `BIGINT` NOT NULL CHECK (amount > 0)
-- `frequency_hours` : `INTEGER` NOT NULL CHECK (frequency_hours > 0)
-- `last_processed_at` : `TIMESTAMPTZ` NULL
-- `status` : `VARCHAR(20)` NOT NULL DEFAULT 'ACTIVE'
-- `created_at` : `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
+### 2.10. Automated Debits (subscriptions)
+Recurring bills (rents, phones, taxes).
+- `id`: `UUID` PRIMARY KEY
+- `source_account_id`: `UUID` NOT NULL REFERENCES accounts(id)
+- `destination_account_id`: `UUID` NOT NULL REFERENCES accounts(id)
+- `amount`: `BIGINT` NOT NULL CHECK (amount > 0)
+- `frequency_hours`: `INTEGER` NOT NULL CHECK (frequency_hours > 0)
+- `last_processed_at`: `TIMESTAMPTZ` NULL
+- `status`: `VARCHAR(20)` NOT NULL DEFAULT 'ACTIVE'
+- `created_at`: `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
 
-### 2.11. Cartes Bancaires (bank_cards)
-Objet physique en jeu, lié à un compte pour autoriser les paiements.
-- `id` : `UUID` PRIMARY KEY (peut correspondre à un ID d'objet dans l'inventaire Arma)
-- `account_id` : `UUID` NOT NULL REFERENCES accounts(id)
-- `pin_hash` : `VARCHAR(255)` NOT NULL (Hash du code PIN à 4 chiffres)
-- `failed_pin_attempts` : `INTEGER` NOT NULL DEFAULT 0 (Sécurité: bloque la carte après 3 erreurs)
-- `status` : `VARCHAR(20)` NOT NULL DEFAULT 'ACTIVE' (ACTIVE, BLOCKED, EXPIRED)
-- `daily_payment_limit` : `BIGINT` NULL (Plafond de paiement physique indépendant du compte)
-- `created_at` : `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
-- `expires_at` : `TIMESTAMPTZ` NULL
-- `deleted_at` : `TIMESTAMPTZ` NULL
+### 2.11. Bank Cards (bank_cards)
+Physical object in game, linked to an account to authorize payments.
+- `id`: `UUID` PRIMARY KEY (can correspond to an item ID in the Arma inventory)
+- `account_id`: `UUID` NOT NULL REFERENCES accounts(id)
+- `pin_hash`: `VARCHAR(255)` NOT NULL (Hash of the 4-digit PIN code)
+- `failed_pin_attempts`: `INTEGER` NOT NULL DEFAULT 0 (Security: blocks the card after 3 errors)
+- `status`: `VARCHAR(20)` NOT NULL DEFAULT 'ACTIVE' (ACTIVE, BLOCKED, EXPIRED)
+- `daily_payment_limit`: `BIGINT` NULL (Physical payment ceiling independent of the account)
+- `created_at`: `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
+- `expires_at`: `TIMESTAMPTZ` NULL
+- `deleted_at`: `TIMESTAMPTZ` NULL
 
-### 2.12. File d'Attente des Transactions (transaction_queue) - *Protection Anti-Crash*
-Garantit qu'aucune transaction initiée par le jeu ne soit perdue si le Middleware crash avant le traitement. Implémente le pattern "Outbox" ou "Job Queue".
-- `id` : `UUID` PRIMARY KEY
-- `payload` : `JSONB` NOT NULL (Le contenu brut de la requête de virement reçue d'Arma)
-- `session_id` : `VARCHAR(255)` NULL (Pour le suivi de la session en cas de litige)
-- `status` : `VARCHAR(20)` NOT NULL DEFAULT 'PENDING' (PENDING, PROCESSING, COMPLETED, FAILED)
-- `error_message` : `TEXT` NULL (Raison de l'échec si le statut est FAILED)
-- `created_at` : `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
-- `processed_at` : `TIMESTAMPTZ` NULL
+### 2.12. Transaction Queue (transaction_queue) - *Anti-Crash Protection*
+Ensures that no transaction initiated by the game is lost if the Middleware crashes before processing. Implements the "Outbox" or "Job Queue" pattern.
+- `id`: `UUID` PRIMARY KEY
+- `payload`: `JSONB` NOT NULL (Raw content of the request to process)
+- `session_id`: `VARCHAR(255)` NULL (Session tracking)
+- `status`: `VARCHAR(20)` NOT NULL DEFAULT 'PENDING'
+- `error_message`: `TEXT` NULL
+- `retry_count`: `INTEGER` NOT NULL DEFAULT 0
+- `created_at`: `TIMESTAMPTZ` NOT NULL DEFAULT NOW()
+- `scheduled_at`: `TIMESTAMPTZ`
+- `processing_started_at`: `TIMESTAMPTZ`
+- `processed_at`: `TIMESTAMPTZ` NULL
 
-**Stratégie de traitement (Middleware C#)** :
-- **Polling Asynchrone** : Un service d'arrière-plan (Background Worker) lira cette table en continu avec `SELECT ... FOR UPDATE SKIP LOCKED` pour éviter les Race Conditions. Il traitera les virements de façon séquentielle sans bloquer la base de données.
-- **Garbage Collection (Nettoyage)** : Un Cron Job (Tâche planifiée) s'exécutera périodiquement (ex: toutes les nuits à 04h00) pour effectuer un `DELETE` automatique des transactions ayant le statut `COMPLETED` ou `FAILED` datant de plus de 7 jours. Cela garantit que cette table ne grossira pas indéfiniment et préserve les performances d'accès de la base.
+**Processing (Middleware):**
+This table is monitored by a Middleware background service (`TransactionOutboxWorker`). It retrieves tasks via secure polling (`SKIP LOCKED`) to process them sequentially without blocking the database. This allows supporting player disconnections and load spikes without data loss.
 
-### 2.13. Schéma Relationnel et Cardinalités (MCD/MLD)
-Afin de bien comprendre comment ces tables interagissent entre elles via leurs contraintes de clés étrangères (Foreign Keys), voici la cartographie exacte de leurs relations cardinales :
+### 2.13. Relational Schema and Cardinalities (ERD)
+To understand how these tables interact via their Foreign Key constraints, here is the exact map of their cardinal relations:
 
-#### Relations 1:N (One-to-Many / Un-à-Plusieurs)
-- **`entities` (1) ─── `accounts` (N)** : Un joueur ou entreprise peut posséder de zéro à plusieurs comptes en banque, mais un compte bancaire appartient (principalement) à une seule entité.
-- **`banking_products` (1) ─── `accounts` (N)** : Un produit bancaire (ex: "Livret A") s'applique à une infinité de comptes, mais un compte obéit à un et un seul contrat de produit.
-- **`accounts` (1) ─── `transactions` (N)** *(en tant que compte source)* : Un compte peut être à l'origine de multiples virements sortants.
-- **`accounts` (1) ─── `transactions` (N)** *(en tant que compte de destination)* : Un compte peut recevoir de multiples virements entrants.
-- **`entities` (1) ─── `licenses` (N)** : Un joueur peut détenir plusieurs licences (Armes, Hélico, Chef d'Entreprise).
-- **`entities` (1) ─── `loans` (N)** : Un joueur/entreprise peut souscrire à plusieurs emprunts en même temps.
-- **`loans` (1) ─── `transactions` (N)** : Un emprunt unique fera l'objet de multiples transactions de remboursement (mensualités).
-- **`accounts` (1) ─── `bank_cards` (N)** : Un même compte courant principal peut se voir délivrer plusieurs cartes bancaires (ex: si le joueur possède un compte Entreprise, il peut créer 3 cartes pour ses 3 employés pointant vers ce même compte).
+#### 1:N Relations (One-to-Many)
+- **`entities` (1) ─── `accounts` (N)**: A player or business can own zero to several bank accounts, but a bank account belongs (primarily) to a single entity.
+- **`banking_products` (1) ─── `accounts` (N)**: A banking product (e.g., "Savings Account") applies to an infinite number of accounts, but an account obeys one and only one product contract.
+- **`accounts` (1) ─── `transactions` (N)** *(as source account)*: An account can be the origin of multiple outgoing transfers.
+- **`accounts` (1) ─── `transactions` (N)** *(as destination account)*: An account can receive multiple incoming transfers.
+- **`entities` (1) ─── `licenses` (N)**: A player can hold several licenses (Weapons, Helicopter, Business Owner).
+- **`entities` (1) ─── `loans` (N)**: A player/business can take out several loans at the same time.
+- **`loans` (1) ─── `transactions` (N)**: A single loan will be the subject of multiple repayment transactions (installments).
+- **`accounts` (1) ─── `bank_cards` (N)**: The same main checking account can have several bank cards issued (e.g., if the player owns a Business account, they can create 3 cards for their 3 employees pointing to this same account).
 
-#### Relations N:N (Many-to-Many / Plusieurs-à-Plusieurs)
-*Ces relations nécessitent une table de liaison (Junction Table) dans une architecture SQL.*
-- **`entities` (N) ─── [ `account_owners` ] ─── `accounts` (N)** : (Comptes Joints). 
-  - *Lecture :* Un compte peut appartenir solidairement à plusieurs entités (ex: un couple de joueurs). 
-  - *Lecture inverse :* Une entité peut être co-titulaire de plusieurs comptes conjoints.
-- **`entities` (N) ─── [ `account_proxies` ] ─── `accounts` (N)** : (Procurations).
-  - *Lecture :* Un compte d'entreprise peut voir sa gestion déléguée à plusieurs employés.
-  - *Lecture inverse :* Un joueur peut avoir la procuration sur plusieurs entreprises différentes.
-- **`accounts` (N) ─── [ `subscriptions` ] ─── `accounts` (N)** : (Prélèvements Autos).
-  - *Lecture :* Un compte A peut émettre plusieurs prélèvements (Netflix, Loyer, Amende).
-  - *Lecture inverse :* Un compte B (le Concessionnaire) peut recevoir des centaines de prélèvements autos de centaines de comptes clients.
+#### N:N Relations (Many-to-Many)
+*These relations require a Junction Table in a SQL architecture.*
+- **`entities` (N) ─── [ `account_owners` ] ─── `accounts` (N)**: (Joint Accounts). 
+  - *Reading:* An account can belong jointly to several entities (e.g., a couple of players). 
+  - *Inverse reading:* An entity can be a co-holder of several joint accounts.
+- **`entities` (N) ─── [ `account_proxies` ] ─── `accounts` (N)**: (Proxies).
+  - *Reading:* A business account can have its management delegated to several employees.
+  - *Inverse reading:* A player can have a proxy for several different businesses.
+- **`accounts` (N) ─── [ `subscriptions` ] ─── `accounts` (N)**: (Automatic Debits).
+  - *Reading:* Account A can issue several debits (Netflix, Rent, Fine).
+  - *Inverse reading:* Account B (the Dealership) can receive hundreds of automatic debits from hundreds of customer accounts.
 
-#### Représentation Visuelle Simplifiée (Mermaid Line)
+#### Simplified Visual Representation (Mermaid Line)
 `(entities)` ---> `(accounts)` ---> `(transactions)`
 `|-->(licenses)`  `|-->(bank_cards)`     `|-->(transaction_queue)`
 `|-->(loans)`     `|-->(subscriptions)`
 
 ---
 
-## 3. Technologies Choisies
-- **Backend / BDD :** **PostgreSQL** (Robustesse ACID parfaite, réplication optionnelle pour Haute Disponibilité).
-- **Middleware :** **C# (.NET 8+)** (Hautes performances, écosystème ASP.NET Core mature, multiplateforme Linux/Docker natif, grande proximité avec l'EnfusionScript d'Arma Reforger).
-- **Communication Arma -> Middleware :** API REST (`RestApi` dans l'Enfusion Engine).
+## 3. Chosen Technologies
+- **Backend / DB:** **PostgreSQL** (Perfect ACID robustness, optional replication for High Availability).
+- **Middleware:** **C# (.NET 8+)** (High performance, mature ASP.NET Core ecosystem, native Linux/Docker multi-platform, high proximity to Arma Reforger's EnfusionScript).
+- **Communication Arma -> Middleware:** REST API (`RestApi` in the Enfusion Engine).
 
 ---
-*Prochaine étape : [Spécifications Techniques](4_Technical_Specifications.md)*
+*Next step: [Technical Specifications](4_Technical_Specifications.md)*

@@ -1,23 +1,24 @@
-# 1. Introduction au Data Core
+# 1. Introduction to the DB System
 
-## Vue d'ensemble
-`Capitalism - Data Core` est un moteur de persistance financier et un orchestrateur d'infrastructure pour le système économique "Capitalism". Il assure la gestion des actifs, la définition du schéma relationnel bancaire et la configuration initiale des produits financiers pour des écosystèmes persistants.
+`Capitalism - DB` is the data foundation of the **Capitalism Reforged** project.
 
-## Philosophie du dépôt
-Ce dépôt suit un principe de **découplage strict** :
-- Il ne contient **aucune logique métier applicative** (pas de code C#, pas de calculs complexes).
-- Il garantit l'**intégrité des données** via des contraintes SQL natives (CHECK, UNIQUE, Foreign Keys).
-- Il est conçu pour être **autonome** : une fois lancé via Docker, il fournit une infrastructure prête pour n'importe quel Middleware.
+This is where all the system memory resides: accounts, banks, and above all, the history of every transaction.
 
-## Composants Clés
-1. **Base de Données (PostgreSQL)** : Le moteur de stockage.
-2. **Registre (Ledger)** : La table de transactions hautement performante.
-3. **Administration (pgAdmin)** : Outil visuel de gestion du noyau.
+## Repository Philosophy
+This repository is intentionally separated from the rest to ensure security and clarity:
+- It contains **data and storage rules**, but not the application code.
+- It uses safeguards directly in the database to **prevent calculation errors**.
+- It is **turnkey**: once launched via Docker, the system is ready to receive connections from the API.
 
-## Flux d'initialisation
-À chaque démarrage d'un nouveau conteneur, les scripts sont exécutés dans cet ordre :
-1. `init.sql` : Création des structures.
-2. `seeds.sql` : Injection des données de base.
+## Key Components
+1. **Database (PostgreSQL)**: The storage engine.
+2. **Ledger**: The high-performance transaction table.
+3. **Administration (pgAdmin)**: Visual tool for core management.
+
+## Initialization Flow
+Every time a new container starts, scripts are executed in this order:
+1. `init.sql`: Structure creation.
+2. `seeds.sql`: Base data injection.
 
 ---
-*Prochaine étape : [Capacités Fonctionnelles](2_Functional_Capabilities.md)*
+*Next step: [Functional Capabilities](2_Functional_Capabilities.md)*

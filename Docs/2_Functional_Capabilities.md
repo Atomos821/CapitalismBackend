@@ -1,61 +1,61 @@
-# 2. Capacités Fonctionnelles du Data Core
+# 2. Functional Capabilities of Capitalism Reforged
 
-Ce document présente les capacités métiers et les produits financiers que le socle de données `Capitalism - Data Core` peut supporter. Il définit le potentiel fonctionnel du système, indépendamment de ses interfaces ou de ses applications tierces.
-
----
-
-## 1. 👥 Gestion des Acteurs Économiques
-Le système repose sur un modèle d'entités abstrait permettant de gérer différents profils :
-*   **Individus** : Comptes personnels pour les joueurs.
-*   **Organisations** : Entreprises, syndicats, factions ou groupes gouvernementaux.
-*   **Service Système** : Entités de régulation ou banques centrales.
-*   **Historique et Traçabilité** : Chaque acteur dispose d'un cycle de vie complet, permettant de conserver les archives comptables même après la dissolution d'une organisation ou le départ d'un individu.
-
-## 2. 🏛️ Système Bancaire Multi-Enseignes
-La structure permet la coexistence de plusieurs institutions bancaires au sein d'une même économie :
-*   **Identité Propre** : Chaque banque peut avoir son propre nom, sa description et sa devise de référence.
-*   **Paramétrage Visuel** : La configuration permet d'adapter l'apparence des interfaces (couleurs, logos) selon l'établissement choisi.
-
-## 3. 💳 Catalogue de Produits Bancaires
-Le système permet de modéliser une large gamme de produits financiers configurables dynamiquement.
-
-### 3.1 Comptes de Dépôt
-Le catalogue permet de créer des comptes variés (Courant, Épargne, Professionnel) définis par :
-*   **Rendement** : Taux d'intérêt sur les soldes.
-*   **Accessibilité** : Permissions modulables pour les retraits, les dépôts et les paiements.
-*   **Tarification** : Frais de retrait et de virement personnalisables par produit.
-*   **Contraintes de Solde** : Montants minimums obligatoires ou plafonds de dépôt.
-
-### 3.2 Solutions de Financement (Prêts)
-La base supporte nativement des produits de crédit avec :
-*   Taux d'intérêt spécifiques.
-*   Rythme de remboursement flexible (hebdomadaire, mensuel, etc.).
-*   Limites de montant adaptées à chaque type de clientèle.
-
-## 4. 🔒 Protection et Gestion des Risques
-Des mécanismes de contrôle sont intégrés nativement au niveau de la donnée :
-*   **Gestion du Découvert** : Limite de tolérance négative configurable par compte, empêchant techniquement tout dépassement non autorisé.
-*   **Verrouillage de Sécurité** : Capacité de suspendre les opérations d'un compte (gel des fonds) pour des raisons de sécurité.
-
-## 5. 🤝 Propriété Partagée et Délégation
-Le modèle permet une gestion complexe de l'accès aux fonds :
-*   **Comptes-Joints** : Plusieurs individus ou gérants peuvent être copropriétaires d'un même compte.
-*   **Mandats (Procurations)** : Système permettant de déléguer l'accès à un compte avec des restrictions précises (limites de dépenses journalières, interdiction de retrait de liquide).
-
-## 6. 🏧 Réseau Monétique (Cartes Bancaires)
-Le système gère des cartes de paiement virtuelles ou physiques :
-*   **Sécurisation** : Protection par code PIN et blocage automatique après plusieurs erreurs.
-*   **Suivi des Plafonds** : Limites de paiement journalières indépendantes du solde disponible.
-
-## 7. ⏳ Automatisation des flux (Prélèvements et Engagements)
-Le socle permet de programmer des transactions récurrentes ou différées :
-*   **Récurrence** : Salaires, loyers, abonnements ou taxes prélevés automatiquement à intervalle régulier.
-*   **Planification** : Ordres de virement programmés pour une exécution future.
-
-## 8. 💱 Échanges et Fiscalité
-Le registre des transactions intègre nativement des concepts de gestion avancée :
-*   **Fiscalité à la source** : Calcul et redirection automatique des taxes vers les comptes de l'administration.
-*   **Gestion des Changes** : Support des virements multi-devises avec enregistrement du taux appliqué au moment de l'opération.
+This document presents what the **Capitalism Reforged** system can concretely do (accounts, loans, cards, etc.), independent of the code or the game.
 
 ---
-*Prochaine étape : [Architecture & Modèle de Données](3_Data_Model_Architecture.md)*
+
+## 1. 👥 Economic Actors Management
+The system is based on an abstract entity model allowing for different profiles:
+*   **Individuals**: Personal accounts for players.
+*   **Organizations**: Businesses, unions, factions, or government groups.
+*   **System Services**: Regulatory entities or central banks.
+*   **History and Traceability**: Each actor has a complete lifecycle, allowing accounting archives to be kept even after an organization is dissolved or an individual leaves.
+
+## 2. 🏛️ Multi-Brand Banking System
+The structure allows for the coexistence of several banking institutions within the same economy:
+*   **Unique Identity**: Each bank can have its own name, description, and reference currency.
+*   **Visual Configuration**: The configuration allows for adapting the appearance of interfaces (colors, logos) according to the chosen establishment.
+
+## 3. 💳 Banking Product Catalog
+The system allows for modeling a wide range of dynamically configurable financial products.
+
+### 3.1 Deposit Accounts
+The catalog allows for the creation of various accounts (Checking, Savings, Business) defined by:
+*   **Yield**: Interest rates on balances.
+*   **Accessibility**: Variable permissions for withdrawals, deposits, and payments.
+*   **Pricing**: Customizable withdrawal and transfer fees per product.
+*   **Balance Constraints**: Mandatory minimum amounts or deposit ceilings.
+
+### 3.2 Financing Solutions (Loans)
+The base natively supports credit products with:
+*   Specific interest rates.
+*   Flexible repayment schedules (weekly, monthly, etc.).
+*   Amount limits adapted to each type of clientele.
+
+## 4. 🔒 Protection and Risk Management
+Control mechanisms are natively integrated at the data level:
+*   **Overdraft Management**: Configurable negative tolerance limit per account, technically preventing any unauthorized overdraft.
+*   **Security Locking**: Ability to suspend account operations (freeze funds) for security reasons.
+
+## 5. 🤝 Shared Ownership and Delegation
+The model allows for complex management of access to funds:
+*   **Joint Accounts**: Several individuals or managers can be co-owners of the same account.
+*   **Mandates (Proxies)**: A system for delegating access to an account with precise restrictions (daily spending limits, prohibition of cash withdrawals).
+
+## 6. 🏧 Electronic Payment Network (Bank Cards)
+The system manages virtual or physical payment cards:
+*   **Securing**: PIN code protection and automatic blocking after several errors.
+*   **Limit Tracking**: Daily payment limits independent of the available balance.
+
+## 7. ⏳ Workflow Automation (Direct Debits and Engagements)
+The foundation allows for scheduling recurring or deferred transactions:
+*   **Recurrence**: Salaries, rents, subscriptions, or taxes automatically deducted at regular intervals.
+*   **Scheduling**: Planned transfer orders for future execution.
+
+## 8. 💱 Exchange and Taxation
+The transaction ledger natively integrates advanced management concepts:
+*   **Taxation at Source**: Automatic calculation and redirection of taxes to administration accounts.
+*   **Exchange Management**: Support for multi-currency transfers with recording of the rate applied at the time of the operation.
+
+---
+*Next step: [Architecture & Data Model](3_Data_Model_Architecture.md)*

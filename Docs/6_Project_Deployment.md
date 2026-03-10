@@ -1,46 +1,33 @@
-# 6. Guide de Déploiement
+# 6. Deployment Guide
 
-Ce guide explique comment déployer le système économique Capitalism en utilisant Docker.
+This guide explains how to deploy the **Capitalism - DB** foundation using Docker.
 
-## 📋 Prérequis
-- **Docker** & **Docker Compose** installés.
-- Ports `5432` (Base de données), `5050` (pgAdmin), et `8080` (API) disponibles sur l'hôte.
+## 📋 Prerequisites
+- **Docker** & **Docker Compose** installed.
+- Port `5432` (Database) and `5050` (pgAdmin - optional) available on the host.
 
 ## 🔨 Configuration
-1.  **Backend** : Copiez `d:\GitHub\CapitalismBackend\.env.example` vers `.env` et mettez à jour les identifiants.
-2.  **Middleware** : Copiez `d:\GitHub\CapitalismMiddleware\.env.example` vers `.env`. Mettez à jour `API_CONNECTION_STRING` pour pointer vers votre base de données et définissez une clé `API_KEY` robuste.
+1.  Copy `.env.example` to `.env`.
+2.  Update the credentials (`POSTGRES_USER`, `POSTGRES_PASSWORD`).
 
-## 🚀 Étapes de Déploiement
+## 🚀 Deployment Steps
 
-### 1. Base de données & Infrastructure
-Dans le répertoire `CapitalismBackend` :
+In the `CapitalismBackend` directory:
 ```bash
 docker compose up -d
 ```
-Ceci démarre :
-- **PostgreSQL** : Initialisé automatiquement avec `init.sql`.
-- **pgAdmin** : Pré-enregistré avec la base de données `capitalism_core`.
+This starts:
+- **PostgreSQL**: Automatically initialized with `init.sql` (Schema) and `seeds.sql` (Data).
+- (if uncommented) **pgAdmin**: Pre-registered with the `capitalism_db` database for easy visualization.
 
-### 2. API Middleware
-Dans le répertoire `CapitalismMiddleware` :
-```bash
-docker compose up --build -d
-```
-Ceci construit et démarre l'API C# ASP.NET Core.
-
-## 🔍 Vérification
-- **Santé de l'API** : Visitez `http://localhost:8080/health`. Doit retourner "Healthy".
-- **Documentation** : Visitez `http://localhost:8080/scalar/v1` pour tester l'API de manière interactive.
-- **Administration DB** : Visitez `http://localhost:5050` pour gérer les données via pgAdmin.
-
-## 🔄 Maintenance & Mises à jour
-Pour réinitialiser complètement la base de données :
+## 🔄 Maintenance & Updates
+To completely reset the database and clear all persistent data:
 ```bash
 docker compose down -v
 docker compose up -d
 ```
 > [!WARNING]
-> Cette commande supprimera définitivement tous les comptes joueurs et l'historique des transactions.
+> This command will permanently delete all stored data, including accounts and transaction history.
 
----
-*Prochaine étape : [Aperçu de l'API Middleware](7_Middleware_API_Preview.md)*
+## 🔗 Next Steps
+The database is now ready to receive connections. You can now deploy the [Capitalism Middleware](../../CapitalismMiddleware/README.md) to start interacting with the banking engine.
