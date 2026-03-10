@@ -188,6 +188,11 @@ CREATE UNIQUE INDEX idx_transactions_idempotency
 ON transactions (idempotency_key, timestamp) 
 WHERE idempotency_key IS NOT NULL AND status != 'FAILED';
 
+-- Performance indexes for high-frequency API queries
+CREATE INDEX idx_transactions_source_time ON transactions (source_account_id, timestamp DESC);
+CREATE INDEX idx_transactions_dest_time ON transactions (destination_account_id, timestamp DESC);
+CREATE INDEX idx_transactions_card_daily ON transactions (source_account_id, category, timestamp) WHERE category = 'CARD_PAYMENT';
+
 -- Performance index for soft-deletes
 CREATE INDEX idx_accounts_deleted_at ON accounts (deleted_at) WHERE deleted_at IS NULL;
 CREATE INDEX idx_entities_deleted_at ON entities (deleted_at) WHERE deleted_at IS NULL;
